@@ -1,95 +1,154 @@
 **A reproducible pipeline to call variants -- for phylogenomic inference**.
+
 **v0.1**
+
 [TOC]
 
 ## Introduction
 
-**nf-var** is a bioinformatics pipeline that calls variants based on a reference and bam files. It then filters the resulting variant calls and creates mask files based on sequencing depth or heterozygosity. This is particularly relevant for phylogenetic inference, when the resulting consensus sequences need to reflect variation in coverage to avoid reference bias. This pipeline can easily be integrated in a workflow that includes: [nf-polish](https://github.com/MozesBlom/nf-polish), [nf-umap](https://github.com/IngoMue/nf-umap), nf-var & [nf-phylo](https://github.com/MozesBlom/nf-phylo). Thus, simplifying the bioinformatic task to go from raw short-read sequence data to a phylogenetic hypothesis.
+**nf-var** is a bioinformatics pipeline that calls variants based on a
+reference and bam files. It then filters the resulting variant calls and
+creates mask files based on sequencing depth or heterozygosity. This is
+particularly relevant for phylogenetic inference, when the resulting consensus
+sequences need to reflect variation in coverage to avoid reference bias. This
+pipeline can easily be integrated in a workflow that includes:
+[nf-polish](https://github.com/MozesBlom/nf-polish),
+[nf-umap](https://github.com/IngoMue/nf-umap), nf-var &
+[nf-phylo](https://github.com/MozesBlom/nf-phylo). Thus, simplifying the
+bioinformatic task to go from raw short-read sequence data to a phylogenetic
+hypothesis.
 
-The pipeline is built using [Nextflow](https://www.nextflow.io) (DSL2), a workflow tool to run tasks across multiple computing infrastructures in a very portable manner. It currently creates a custom Conda environment from scratch and therefore does not require any pre-compiled software packages (besides Nextflow itself). Future development may include containerized versions as well to further enhance reproducibility.
+The pipeline is built using [Nextflow](https://www.nextflow.io) (DSL2), a
+workflow tool to run tasks across multiple computing infrastructures in a very
+portable manner. It currently creates a custom Conda environment from scratch
+and therefore does not require any pre-compiled software packages (besides
+Nextflow itself). Future development may include containerized versions as well
+to further enhance reproducibility.
 
 ## Quick Start
 
 1. Install [`nextflow`](https://www.nextflow.io/) (version >= 19.04) 
 2. Install [`Conda`](https://conda.io/miniconda.html) (version >= 4.10)
-3. Download the pipeline and adjust the config file. Here you need to specify the location of the input data, filtering settings etc.
+3. Download the pipeline and adjust the config file
+   ([`nextflow.config`](nextflow.config)). Here you need to specify the
+   location of the input data, filtering settings etc.
+4. Create a nextflow config profile that matches your cluster set-up (
+   [`profile`](
+   https://www.nextflow.io/docs/latest/config.html#config-profiles) and start
+   running your own analysis!
 
-    ```bash
-    ./nf-var/nextflow.config
-    ```
-4. Create a nextflow config profile that matches your cluster set-up ( [`profile`]( https://www.nextflow.io/docs/latest/config.html#config-profiles) and start running your own analysis!
-
-    ```bash
-    nextflow run ./nf-var/main.nf -profile curta
-    ```
+        $ nextflow run ./nf-var/main.nf -profile curta
 
 6. Once your run has completed successfully, clean up the intermediate files.
 
-    ```bash
-    nextflow clean -f -k
-    ```
+        $ nextflow clean -f -k
 
-If a run stalls for a given reason, inspect the error message, adjust and you can rerun using the 'resume' flag.
+If a run stalls for a given reason, inspect the error message, adjust and you
+can rerun using the 'resume' flag.
 
-    ```bash
-    nextflow run ./nf-var/main.nf -profile curta -resume
-    ```
-
+        $ nextflow run ./nf-var/main.nf -profile curta -resume
 
 **N.B.** Please make sure that:
-* The scripts in `./bin/xxx.py` can be executed by any user. You can check the user permissions via:
 
-    ```bash
-    ls -l ./bin/
-    ```
-And if need be changed via:
+* the scripts in `./bin/xxx.py` can be executed by any user. You can check the user permissions via
 
-    ```bash
-    cd ./bin/
-    chmod 755 *
-    ```
+        $ ls -l ./bin/
 
-* There is **sufficient storage capacity** on the location where you will execute the pipeline from (and where the nextflow work directory will be stored). On the Curta cluster, running on `/home/` will easily lead to problems and all pipelines will need to be executed from a `/scratch/` project folder.
+  And if need be changed via:
 
+        $ cd ./bin/
+        $ chmod +x *
+
+* there is **sufficient storage capacity** on the location where you
+  will execute the pipeline from (and where the nextflow work directory will be
+  stored). For example, on the Curta cluster, running on `/home/` will easily
+  lead to problems and all pipelines will need to be executed from a
+  `/scratch/` project folder.
 
 ## Pipeline Summary
 
-The overarching objective of this pipeline is to generate a variant call set and mask files, or consensus sequences for each scaffold/chromosome and each individual. Such output is particularly relevant for phylogenetic inference at a genome-wide scale. The pipeline can be run in one go or in two steps if there's no a-priori information about depth of coverage. If the latter, then the optimal way is to first generate coverage statistics (`calc_coverage`) and then adjust the filtering settings in the `nextflow.config` file accordingly. The pipeline follows the following structure:
+The overarching objective of this pipeline is to generate a variant call set
+and mask files, or consensus sequences for each scaffold/chromosome and each
+individual. Such output is particularly relevant for phylogenetic inference at
+a genome-wide scale. The pipeline can be run in one go or in two steps if
+there's no a-priori information about depth of coverage. If the latter, then
+the optimal way is to first generate coverage statistics (`calc_coverage`) and
+then adjust the filtering settings in the `nextflow.config` file accordingly.
+The pipeline follows the following structure:
 
-* If need be, calculate depth of sequencing coverage for each individual -- plus differentiate between sex and autosomes to verify sex ID (`samtools`)
-* Visualise the depth of coverage per individual (`bin/01_cov_stats_SUMMARY.py`)
+* If need be, calculate depth of sequencing coverage for each individual --
+  plus differentiate between sex and autosomes to verify sex ID (`samtools`)
+* Visualise the depth of coverage per individual
+  (`bin/01_cov_stats_SUMMARY.py`)
 * Call variants for each individual by scaffold (`freebayes`)
-* First filtering pass to remove low quality variant calls -- allelic balance between 0 and 0.2 -- and deconstruct mnp's (`freebayes`, `vcffilter`, `vcfallelicprimitives`)
-* Optional: Remove indel variation from vcf file (`vcffilter`). NOTE: This is important if you want the consensus sequences for the same scaffold to be the same length across all indivs
-* Optional: Identify heterozygous sites and create Mask file for corresponding positions (`vcffilter`)
-* Optional: Identify sites below or above a sequencing depth threshold and create Mask file for corresponding positions (`vcffilter`)
+* First filtering pass to remove low quality variant calls -- allelic balance
+  between 0 and 0.2 -- and deconstruct mnp's (`freebayes`, `vcffilter`,
+  `vcfallelicprimitives`)
+* Optional: Remove indel variation from vcf file (`vcffilter`). NOTE: This is
+  important if you want the consensus sequences for the same scaffold to be the
+  same length across all indivs
+* Optional: Identify heterozygous sites and create Mask file for corresponding
+  positions (`vcffilter`)
+* Optional: Identify sites below or above a sequencing depth threshold and
+  create Mask file for corresponding positions (`vcffilter`)
 * Optional: Create an overall Mask file that uses all of the above criteria
-* Optional: Index VCF files and call consensus sequences for each individual by chromosome/scaffold (with sites masked being N). (`tabix`, `bcftools`)
-
+* Optional: Index VCF files and call consensus sequences for each individual by
+  chromosome/scaffold (with sites masked being N). (`tabix`, `bcftools`)
 
 ### Input
-The pipeline requires the following input files
 
-indivs_file = A list of individuals to be processed
-chromos_file = A list of chromosomes or scaffolds to be processes
-ref_file = The reference genome used for mapping -- Assumes that all individuals were mapped against the same reference
+The pipeline requires the following input
 
-input_dir = A directory with sorted and indexed BAM files per individual. For example, as generated by [nf-umap](https://github.com/IngoMue/nf-umap). The default expectation is that the bam naming format is: `indiv.bam` (where indiv is an individual listed in indivs_file). However, if your naming format is different, you can modify the `bams_fn` parameter in the `./nextflow.config` file. The primary assumption is that the bam file still starts with the individual name, but it can then have a user specified name such as `indivA_merged_sorted.bam`. 
+1. `indivs_file` = A list of individuals to be processed
+2. `chromos_file` = A list of chromosomes or scaffolds to be processes
+3. `ref_file` = The reference genome used for mapping -- Assumes that all
+   individuals were mapped against the same reference
+4. `input_dir` = A directory with sorted and indexed BAM files per individual.
+   For example, as generated by [nf-umap](https://github.com/IngoMue/nf-umap).
+   The default expectation is that the bam naming format is: `indiv.bam` (where
+   indiv is an individual listed in indivs_file). However, if your naming
+   format is different, you can modify the `bams_fn` parameter in the
+   `./nextflow.config` file. The primary assumption is that the bam file still
+   starts with the individual name, but it can then have a user specified name
+   such as `indivA_merged_sorted.bam`. 
 
-Run specific options can  be specified in the `./nextflow.config` script. All other values for programs are set at default. Boolean values can be specified as `true` or `false` and path names need to be absolute. If preferred, the same options listed in the config file can also be directly modified by using a parameter flag when initiating the nextflow run. Example given:
+Run specific options can  be specified in the `./nextflow.config` script. All
+other values for programs are set at default. Boolean values can be specified
+as `true` or `false` and path names need to be absolute. If preferred, the same
+options listed in the config file can also be directly modified by using a
+parameter flag when initiating the nextflow run. Example given:
 
-    ```bash
-    nextflow run nf-var/main.nf -profile curta --indivs_file /path/to/indivs.txt --chromos_file /path/to/chromos.txt --outdir /path/to/results --consensus_calling true
-    ```
+    $ nextflow run nf-var/main.nf \
+        -profile curta \
+        --indivs_file /path/to/indivs.txt \
+        --chromos_file /path/to/chromos.txt \
+        --consensus_calling true \
+        --outdir /path/to/results
 
-One specific parameter of interest is if your dataset includes sex chromosomes. You can specify a scaffold or chromosome that is sex-linked in the `./nextflow.config` script. This scaffold or chromosome should of course also be present in the `chromos.LIST` file, but it will then plot the coverage seperately for autosomes and sex chromosomes. For example, a typical user case may be that you would like to estimate the sequencing depth of the X chromosome relative to the autosomes. This may be useful for sex determination of individuals since males should have half of the coverage as females. I generally tend to ignore the Y chromosome for such analyses since it is highly repetitive. In other words, I map against the entire reference genome (incl. Y chromosome, unplaced scaffolds etc.) but only include the X chromosome in the `chromos.LIST` and `./nextflow.config` script.
+One specific parameter of interest is if your dataset includes sex chromosomes.
+You can specify a scaffold or chromosome that is sex-linked in the
+`./nextflow.config` script. This scaffold or chromosome should of course also
+be present in the `chromos.LIST` file, but it will then plot the coverage
+seperately for autosomes and sex chromosomes. For example, a typical user case
+may be that you would like to estimate the sequencing depth of the X chromosome
+relative to the autosomes. This may be useful for sex determination of
+individuals since males should have half of the coverage as females. I
+generally tend to ignore the Y chromosome for such analyses since it is highly
+repetitive. In other words, I map against the entire reference genome (incl. Y
+chromosome, unplaced scaffolds etc.) but only include the X chromosome in the
+`chromos.LIST` and `./nextflow.config` script.
 
 ### Output
-The pipeline produces tab-delim text files with coverage statistics and plots, vcf files per individual and scaffold, mask files per individual and scaffold, and consensus sequences with information on the amount of missing data for each consensus sequence and individual. All stored in the following output folders:
+
+The pipeline produces tab-delim text files with coverage statistics and plots,
+vcf files per individual and scaffold, mask files per individual and scaffold,
+and consensus sequences with information on the amount of missing data for each
+consensus sequence and individual. All stored in the following output folders:
 
 ```bash
-'results'
-| - 00.coverage    	-> Coverage statistics in tab-delim text files per individual and across all individuals.
-| - 01.variants	  	-> Variants and Mask files, stored by individual
-| - 02.consensus	-> Consensus sequence for each scaffold, stored by individual. Plus an overview of missing data across all scaffolds for each individual.
+results/
+.
+├── 00.coverage/   Coverage statistics in tab-delim text files per individual and across all individuals.
+├── 01.variants/   Variants and Mask files, stored by individual
+└── 02.consensus/  Consensus sequence for each scaffold, stored by individual. Plus an overview of missing data across all scaffolds for each individual.
 ```

@@ -1,4 +1,4 @@
-**A reproducible pipeline to call variants -- for phylogenomic inference**.
+# A reproducible pipeline to call variants -- for phylogenomic inference
 
 **v0.1**
 
@@ -27,15 +27,14 @@ to further enhance reproducibility.
 
 ## Quick Start
 
-1. Install [`nextflow`](https://www.nextflow.io/) (version >= 19.04) 
+1. Install [`nextflow`](https://www.nextflow.io/) (version >= 19.04)
 2. Install [`Conda`](https://conda.io/miniconda.html) (version >= 4.10)
 3. Download the pipeline and adjust the config file
    ([`nextflow.config`](nextflow.config)). Here you need to specify the
    location of the input data, filtering settings etc.
 4. Create a nextflow config profile that matches your cluster set-up (
-   [`profile`](
-   https://www.nextflow.io/docs/latest/config.html#config-profiles) and start
-   running your own analysis!
+   [`profile`](https://www.nextflow.io/docs/latest/config.html#config-profiles))
+   and start running your own analysis!
 
         $ nextflow run ./nf-var/main.nf -profile curta
 
@@ -44,20 +43,20 @@ to further enhance reproducibility.
         $ nextflow clean -f -k
 
 If a run stalls for a given reason, inspect the error message, adjust and you
-can rerun using the 'resume' flag.
+can rerun using the 'resume' flag:
 
         $ nextflow run ./nf-var/main.nf -profile curta -resume
 
 **N.B.** Please make sure that:
 
-* the scripts in `./bin/xxx.py` can be executed by any user. You can check the user permissions via
+* the scripts in `./bin/*.py` can be executed by any user. You can check the
+  user permissions via
 
         $ ls -l ./bin/
 
   And if need be changed via:
 
-        $ cd ./bin/
-        $ chmod +x *
+        $ chmod +x ./bin/*.py
 
 * there is **sufficient storage capacity** on the location where you
   will execute the pipeline from (and where the nextflow work directory will be
@@ -150,5 +149,6 @@ results/
 .
 ├── 00.coverage/   Coverage statistics in tab-delim text files per individual and across all individuals.
 ├── 01.variants/   Variants and Mask files, stored by individual
-└── 02.consensus/  Consensus sequence for each scaffold, stored by individual. Plus an overview of missing data across all scaffolds for each individual.
+└── 02.consensus/  Consensus sequence for each scaffold, stored by individual,
+                   plus an overview of missing data across all scaffolds for each individual.
 ```

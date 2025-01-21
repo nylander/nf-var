@@ -2,7 +2,7 @@
 
 #SBATCH --account=naiss2024-22-1518
 #SBATCH --job-name="nf-var"
-#SBATCH --output= "nf-var.log"
+#SBATCH --output="nf-var.log"
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

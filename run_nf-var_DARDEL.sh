@@ -14,6 +14,7 @@ ml singularity
 ml python/3.12.3
 
 export NXF_OPTS='-Xms1g -Xmx4g'
+export NXF_CONDA_CACHEDIR=/cfs/klemming/projects/supr/nrmdnalab_storage/src/NXF_CONDA_CACHEDIR
 export NXF_SINGULARITY_CACHEDIR=/cfs/klemming/projects/supr/nrmdnalab_storage/src/NXF_SINGULARITY_CACHEDIR
 
 nextflow run \

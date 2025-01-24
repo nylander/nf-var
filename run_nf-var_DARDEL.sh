@@ -19,6 +19,6 @@ export NXF_SINGULARITY_CACHEDIR=/cfs/klemming/projects/supr/nrmdnalab_storage/sr
 nextflow run \
     /cfs/klemming/projects/supr/nrmdnalab_storage/src/nf-var/main.nf \
     -name run_nf_var  \
-    -profile singularity,pdc_kth \
+    -profile pdc_kth \
     --project naiss2024-22-1518
 

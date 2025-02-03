@@ -2,7 +2,7 @@
 
 #SBATCH --account=naiss2024-22-1518
 #SBATCH --job-name="nf-var"
-#SBATCH --output= "nf-var.log"
+#SBATCH --output="nf-var.log"
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -14,11 +14,12 @@ ml singularity
 ml python/3.12.3
 
 export NXF_OPTS='-Xms1g -Xmx4g'
+export NXF_CONDA_CACHEDIR=/cfs/klemming/projects/supr/nrmdnalab_storage/src/NXF_CONDA_CACHEDIR
 export NXF_SINGULARITY_CACHEDIR=/cfs/klemming/projects/supr/nrmdnalab_storage/src/NXF_SINGULARITY_CACHEDIR
 
 nextflow run \
     /cfs/klemming/projects/supr/nrmdnalab_storage/src/nf-var/main.nf \
     -name run_nf_var  \
-    -profile singularity,pdc_kth \
+    -profile pdc_kth \
     --project naiss2024-22-1518
 

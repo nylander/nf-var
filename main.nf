@@ -4,7 +4,7 @@ log.info """\
 
         ================================================
         NF-variant - Variant calling for whole-genome resequence data
-        https://github.com/MozesBlom/nf-variant    
+        https://github.com/MozesBlom/nf-variant
         Author: Mozes P.K. Blom
         ================================================
         |indivfile    : ${params.indivs_file}
@@ -51,7 +51,7 @@ indivs_ch = Channel.fromList(indivs)
 indivs_bam_ch = indivs_ch.map{ it ->
                                     def indiv = it
                                     def bam_fn = file("${params.inputdir}/${it}${params.bams_fn}")
-                                    
+
                                     [indiv, bam_fn]
 
                                     }
@@ -68,7 +68,7 @@ ref_ch = Channel.fromPath(params.ref_file)
 
 /*
 ===============================
-~ ~ ~ > *  Processes  * < ~ ~ ~ 
+~ ~ ~ > *  Processes  * < ~ ~ ~
 ===============================
 */
 
@@ -79,13 +79,13 @@ process index_bam  {
  */
 
     tag "Index bam file"
+    conda 'environment.yml'
 
     input:
     tuple val(indiv), path(indiv_bam)
 
     output:
     tuple val(indiv), path(indiv_bam), path("${indiv_bam}.bai")
-
 
     script:
     """
@@ -105,13 +105,13 @@ process cov_estimate {
  */
 
     tag "Estimate coverage"
+    conda 'environment.yml'
 
     input:
     tuple val(indiv), path(indiv_bam), path(indiv_bam_bai), val(chromo), path(reference)
 
     output:
     tuple val(indiv), path("${chromo}.tsv")
-
 
     script:
     def out_fn = "${chromo}.tsv"
@@ -130,6 +130,7 @@ process cov_summary_INDIV {
  */
 
     tag "Coverage summary per individual"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
     input:
@@ -137,7 +138,6 @@ process cov_summary_INDIV {
 
     output:
     path("${indiv}_coverage.tsv")
-
 
     script:
     """
@@ -157,6 +157,7 @@ process cov_summary_ALL {
  */
 
     tag "Coverage summary for all indivs"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
     input:
@@ -164,7 +165,6 @@ process cov_summary_ALL {
 
     output:
     file('*')
-
 
     script:
     """
@@ -188,6 +188,7 @@ process call_variants_CHROMO {
  */
 
     tag "Coverage summary for all indivs"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
     label 'Endurance'
 
@@ -196,7 +197,6 @@ process call_variants_CHROMO {
 
     output:
     tuple val(individual), val(chromo), path("${chromo}_vars_filt.vcf.gz")
-
 
     script:
     """
@@ -218,6 +218,7 @@ process remove_indels {
  */
 
     tag "Remove indels"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -226,14 +227,13 @@ process remove_indels {
     output:
     tuple val(individual), val(chromo), path("${chromo}_vars_filt_indels.vcf.gz")
 
-
     script:
     """
 
     bgzip -d -c ${var_vcf} | \
     vcffilter -f 'TYPE = ins' -f 'TYPE = del' -f 'TYPE = complex' --invert --or | \
     bgzip -c > ${chromo}_vars_filt_indels.vcf.gz
-    
+
     """
 }
 
@@ -246,6 +246,7 @@ process mask_hets {
  */
 
     tag "Generate mask for het sites"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -253,7 +254,6 @@ process mask_hets {
 
     output:
     tuple val(individual), val(chromo), path("${chromo}_hets.tsv")
-
 
     script:
     """
@@ -274,6 +274,7 @@ process mask_cov {
  */
 
     tag "Generate mask for low or excess coverage sites"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -281,7 +282,6 @@ process mask_cov {
 
     output:
     tuple val(individual), val(chromo), path("${chromo}_cov.tsv")
-
 
     script:
     """
@@ -308,7 +308,6 @@ process mask_merge {
 
     output:
     tuple val(individual), val(chromo), path("${chromo}_cov_hets.tsv")
-
 
     script:
     """
@@ -337,6 +336,7 @@ process call_consensus {
  */
 
     tag "Call consensus without masking"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -344,7 +344,6 @@ process call_consensus {
 
     output:
     tuple val(individual), val(chromo), path("${individual}_${chromo}_cons.fa")
-
 
     script:
     """
@@ -366,6 +365,7 @@ process call_consensus_MASK {
  */
 
     tag "Call consensus with masking"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -373,7 +373,6 @@ process call_consensus_MASK {
 
     output:
     tuple val(individual), val(chromo), path("${individual}_${chromo}_cons.fa")
-
 
     script:
     """
@@ -397,6 +396,7 @@ process calc_missing_data_INDIV {
  */
 
     tag "Calculate missing data per individual and chromosome"
+    conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -404,7 +404,6 @@ process calc_missing_data_INDIV {
 
     output:
     file("${individual}_missing_data.tsv")
-
 
     script:
     """
@@ -435,7 +434,6 @@ process calc_missing_data_SUMMARY {
     file("all_indivs_missing_data.tsv")
     file("all_indivs_missing_data.pdf")
 
-
     script:
     """
     unset DISPLAY
@@ -463,7 +461,7 @@ workflow {
                                     def indiv = it[0]
                                     def bam_fn = it[1]
                                     def bai_fn = file("${bam_fn}.bai")
-                                    
+
                                     [indiv, bam_fn, bai_fn]
 
                                     }
@@ -520,5 +518,4 @@ workflow {
         }
     }
 }
-
 

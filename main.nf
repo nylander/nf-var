@@ -117,7 +117,7 @@ process cov_estimate {
     def out_fn = "${chromo}.tsv"
     """
 
-    samtools coverage --region ${chromo} --output ${out_fn} ${indiv_bam}
+    samtools coverage --region "${chromo}" --output "${out_fn}" ${indiv_bam}
 
     """
 }
@@ -201,10 +201,10 @@ process call_variants_CHROMO {
     script:
     """
 
-    freebayes -f ${reference} --region ${chromo} -m 10 -p 2 ${indiv_bam}| \
+    freebayes -f ${reference} --region "${chromo}" -m 10 -p 2 ${indiv_bam}| \
     vcffilter -f "QUAL < 20" -f "( AB > 0 ) & ( AB < 0.2 )" --invert --or | \
     vcfallelicprimitives -k -g | \
-    bgzip -c > ${chromo}_vars_filt.vcf.gz
+    bgzip -c > "${chromo}"_vars_filt.vcf.gz
 
     """
 }
@@ -232,7 +232,7 @@ process remove_indels {
 
     bgzip -d -c ${var_vcf} | \
     vcffilter -f 'TYPE = ins' -f 'TYPE = del' -f 'TYPE = complex' --invert --or | \
-    bgzip -c > ${chromo}_vars_filt_indels.vcf.gz
+    bgzip -c > "${chromo}"_vars_filt_indels.vcf.gz
 
     """
 }
@@ -260,7 +260,7 @@ process mask_hets {
 
     bgzip -d -c ${var_vcf} | \
     vcffilter -f '( AF < 1 ) & ( AB < 0.8 )' | \
-    cut -f 1,2 > ${chromo}_hets.tsv
+    cut -f 1,2 > "${chromo}"_hets.tsv
 
     """
 }
@@ -286,8 +286,8 @@ process mask_cov {
     script:
     """
 
-    samtools depth -aa -Q 10 -r ${chromo} ${indiv_bam} | \
-    awk '(\$3 < ${params.mask_min_cov} || \$3 > ${params.mask_max_cov}) {print \$1,\$2}' > ${chromo}_cov.tsv
+    samtools depth -aa -Q 10 -r "${chromo}" ${indiv_bam} | \
+    awk '(\$3 < ${params.mask_min_cov} || \$3 > ${params.mask_max_cov}) {print \$1,\$2}' > "${chromo}"_cov.tsv
 
     """
 }
@@ -320,10 +320,10 @@ process mask_merge {
     # Merge two mask files and sort by position. Remove duplicate entries
     cat ${cov_bed} ${het_bed} | \
     sort -Vk1 -Vk2 | \
-    uniq > ${chromo}_cov_hets.tsv
+    uniq > "${chromo}"_cov_hets.tsv
 
     # Add a header for each column to make it a proper bed file. NOTE, for some reason bcftools consensus has a problem with BED naming, hence tsv.
-    sed -i '1i #CHROM\tPOS' ${chromo}_cov_hets.tsv
+    sed -i '1i #CHROM\tPOS' "${chromo}"_cov_hets.tsv
 
     """
 }
@@ -349,10 +349,10 @@ process call_consensus {
     """
     tabix -p vcf ${vcf_fn}
 
-    samtools faidx ${params.ref_file} ${chromo} | 
-    bcftools consensus ${vcf_fn} -o ${individual}_${chromo}_cons.fa
+    samtools faidx ${params.ref_file} "${chromo}" | 
+    bcftools consensus ${vcf_fn} -o ${individual}_"${chromo}"_cons.fa
 
-    sed -i 's/${chromo}/${individual}/g' ${individual}_${chromo}_cons.fa
+    sed -i 's/${chromo}/${individual}/g' ${individual}_"${chromo}"_cons.fa
 
     """
 }
@@ -378,8 +378,8 @@ process call_consensus_MASK {
     """
     tabix -p vcf ${vcf_fn}
 
-    samtools faidx ${params.ref_file} ${chromo} | 
-    bcftools consensus ${vcf_fn} -m ${mask_fn} -o ${individual}_${chromo}_cons.fa
+    samtools faidx ${params.ref_file} "${chromo}" | 
+    bcftools consensus ${vcf_fn} -m ${mask_fn} -o ${individual}_"${chromo}"_cons.fa
 
     sed -i 's/${chromo}/${individual}/g' ${individual}_${chromo}_cons.fa
 

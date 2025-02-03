@@ -4,7 +4,7 @@ log.info """\
 
         ================================================
         NF-variant - Variant calling for whole-genome resequence data
-        https://github.com/MozesBlom/nf-variant    
+        https://github.com/MozesBlom/nf-variant
         Author: Mozes P.K. Blom
         ================================================
         |indivfile    : ${params.indivs_file}
@@ -165,8 +165,6 @@ process cov_summary_ALL {
 
     output:
     file('*')
-
-    conda 'environment.yml'
 
     script:
     """

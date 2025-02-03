@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 
+"""
+Helper script 00_cov_stats_INDIV.py for nf-var
+"""
 #########################
 ## Required modules
 #########################
-try:
-	import os
-	import sys
-	import argparse
-	import pandas as pd
-except ImportError:
-	sys.exit("One of the required modules can't be found...")
+import os
+import argparse
+import pandas as pd
+
+#try:
+#    import os
+#    import sys
+#    import argparse
+#    import pandas as pd
+#except ImportError:
+#    sys.exit("One of the required modules can't be found...")
 
 
 #########################
@@ -18,9 +25,20 @@ except ImportError:
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-c", "--chromo_cov_tsv_list", help="List of samtools coverage output tsv paths", action = "store", nargs='+', default=[], required=True)
-parser.add_argument("-i", "--individual", help="Individual to which coverage stats belong", required=True)
-parser.add_argument("-o", "--out_dir", help="Directory to store the output file, if unspecified assumes current work dir", default='current', action = "store", required=False)
+parser.add_argument(
+        "-c", "--chromo_cov_tsv_list",
+        help="List of samtools coverage output tsv paths",
+        action="store", nargs='+', default=[], required=True)
+
+parser.add_argument(
+        "-i", "--individual",
+        help="Individual to which coverage stats belong",
+        required=True)
+
+parser.add_argument(
+        "-o", "--out_dir",
+        help="Directory to store the output file, if unspecified assumes current work dir",
+        action="store", default='current',required=False)
 
 args = parser.parse_args()
 
@@ -29,9 +47,9 @@ chromo_cov_fn_list = args.chromo_cov_tsv_list
 indiv = args.individual
 output_path = args.out_dir
 if output_path != 'current':
-	pass
+    pass
 else:
-	output_path = os.getcwd()
+    output_path = os.getcwd()
 
 
 #########################
@@ -42,8 +60,8 @@ frames = []
 
 ## Loop over consensus seqs and estimate missing data
 for chromo_tsv in chromo_cov_fn_list:
-	chromo_df = pd.read_csv(chromo_tsv, sep='\t', header=0)
-	frames.append(chromo_df)
+    chromo_df = pd.read_csv(chromo_tsv, sep='\t', header=0)
+    frames.append(chromo_df)
 
 indiv_df = pd.concat(frames)
 

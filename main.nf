@@ -79,6 +79,7 @@ process index_bam  {
  */
 
     tag "Index bam file"
+    label 'process_low'
     conda 'environment.yml'
 
     input:
@@ -105,6 +106,7 @@ process cov_estimate {
  */
 
     tag "Estimate coverage"
+    label 'process_single'
     conda 'environment.yml'
 
     input:
@@ -130,6 +132,7 @@ process cov_summary_INDIV {
  */
 
     tag "Coverage summary per individual"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
@@ -143,8 +146,8 @@ process cov_summary_INDIV {
     """
 
     00_cov_stats_INDIV.py \
-    -c ${chromo_cov_tsv_list} \
-    -i ${indiv}
+        -c ${chromo_cov_tsv_list} \
+        -i ${indiv}
 
     """
 }
@@ -157,6 +160,7 @@ process cov_summary_ALL {
  */
 
     tag "Coverage summary for all indivs"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
@@ -167,14 +171,19 @@ process cov_summary_ALL {
     file('*')
 
     script:
-    """
-
-    01_cov_stats_SUMMARY.py \
-    -c ${indivs_cov_tsv_list} \
-    -s ${params.sex_chromos} \
-    -p ${params.plots_per_row}
-
-    """
+    if(params.sex_chromos)
+        """
+        01_cov_stats_SUMMARY.py \
+            -c ${indivs_cov_tsv_list} \
+            -s ${params.sex_chromos} \
+            -p ${params.plots_per_row}
+        """
+    else
+        """
+        01_cov_stats_SUMMARY.py \
+            -c ${indivs_cov_tsv_list} \
+            -p ${params.plots_per_row}
+        """
 }
 
 
@@ -188,6 +197,7 @@ process call_variants_CHROMO {
  */
 
     tag "Coverage summary for all indivs"
+    label 'process_high'
     conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
     label 'Endurance'
@@ -201,10 +211,10 @@ process call_variants_CHROMO {
     script:
     """
 
-    freebayes -f ${reference} --region "${chromo}" -m 10 -p 2 ${indiv_bam}| \
-    vcffilter -f "QUAL < 20" -f "( AB > 0 ) & ( AB < 0.2 )" --invert --or | \
-    vcfallelicprimitives -k -g | \
-    bgzip -c > "${chromo}"_vars_filt.vcf.gz
+    freebayes -f ${reference} --region "${chromo}" -m 10 -p 2 ${indiv_bam} | \
+        vcffilter -f "QUAL < 20" -f "( AB > 0 ) & ( AB < 0.2 )" --invert --or | \
+        vcfallelicprimitives -k -g | \
+        bgzip -c > "${chromo}"_vars_filt.vcf.gz
 
     """
 }
@@ -218,6 +228,7 @@ process remove_indels {
  */
 
     tag "Remove indels"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
@@ -231,8 +242,8 @@ process remove_indels {
     """
 
     bgzip -d -c ${var_vcf} | \
-    vcffilter -f 'TYPE = ins' -f 'TYPE = del' -f 'TYPE = complex' --invert --or | \
-    bgzip -c > "${chromo}"_vars_filt_indels.vcf.gz
+        vcffilter -f 'TYPE = ins' -f 'TYPE = del' -f 'TYPE = complex' --invert --or | \
+        bgzip -c > "${chromo}"_vars_filt_indels.vcf.gz
 
     """
 }
@@ -246,6 +257,7 @@ process mask_hets {
  */
 
     tag "Generate mask for het sites"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
@@ -259,8 +271,8 @@ process mask_hets {
     """
 
     bgzip -d -c ${var_vcf} | \
-    vcffilter -f '( AF < 1 ) & ( AB < 0.8 )' | \
-    cut -f 1,2 > "${chromo}"_hets.tsv
+        vcffilter -f '( AF < 1 ) & ( AB < 0.8 )' | \
+        cut -f 1,2 > "${chromo}"_hets.tsv
 
     """
 }
@@ -274,6 +286,7 @@ process mask_cov {
  */
 
     tag "Generate mask for low or excess coverage sites"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
@@ -287,7 +300,7 @@ process mask_cov {
     """
 
     samtools depth -aa -Q 10 -r "${chromo}" ${indiv_bam} | \
-    awk '(\$3 < ${params.mask_min_cov} || \$3 > ${params.mask_max_cov}) {print \$1,\$2}' > "${chromo}"_cov.tsv
+        awk '(\$3 < ${params.mask_min_cov} || \$3 > ${params.mask_max_cov}) {print \$1,\$2}' > "${chromo}"_cov.tsv
 
     """
 }
@@ -301,6 +314,7 @@ process mask_merge {
  */
 
     tag "Merge low cov and het mask files"
+    label 'process_single'
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -336,6 +350,7 @@ process call_consensus {
  */
 
     tag "Call consensus without masking"
+    label 'process_high'
     conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
@@ -347,10 +362,11 @@ process call_consensus {
 
     script:
     """
+
     tabix -p vcf ${vcf_fn}
 
-    samtools faidx ${params.ref_file} "${chromo}" | 
-    bcftools consensus ${vcf_fn} -o ${individual}_"${chromo}"_cons.fa
+    samtools faidx ${params.ref_file} "${chromo}" | \
+        bcftools consensus ${vcf_fn} -o ${individual}_"${chromo}"_cons.fa
 
     sed -i 's/${chromo}/${individual}/g' ${individual}_"${chromo}"_cons.fa
 
@@ -365,6 +381,7 @@ process call_consensus_MASK {
  */
 
     tag "Call consensus with masking"
+    label 'process_high'
     conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
@@ -376,10 +393,11 @@ process call_consensus_MASK {
 
     script:
     """
+
     tabix -p vcf ${vcf_fn}
 
-    samtools faidx ${params.ref_file} "${chromo}" | 
-    bcftools consensus ${vcf_fn} -m ${mask_fn} -o ${individual}_"${chromo}"_cons.fa
+    samtools faidx ${params.ref_file} "${chromo}" | \
+        bcftools consensus ${vcf_fn} -m ${mask_fn} -o ${individual}_"${chromo}"_cons.fa
 
     sed -i 's/${chromo}/${individual}/g' ${individual}_${chromo}_cons.fa
 
@@ -396,6 +414,7 @@ process calc_missing_data_INDIV {
  */
 
     tag "Calculate missing data per individual and chromosome"
+    label 'process_single'
     conda 'environment.yml'
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
@@ -409,8 +428,8 @@ process calc_missing_data_INDIV {
     """
 
     02_cons_stats_INDIV.py \
-    -c ${cons_fn_list} \
-    -i ${individual}
+        -c ${cons_fn_list} \
+        -i ${individual}
 
     """
 }
@@ -425,6 +444,7 @@ process calc_missing_data_SUMMARY {
  */
 
     tag "Calculate missing data across all individual"
+    label 'process_single'
     publishDir "${params.outputdir}/02.consensus/", mode:'copy'
 
     input:
@@ -436,10 +456,11 @@ process calc_missing_data_SUMMARY {
 
     script:
     """
+
     unset DISPLAY
 
     03_cons_stats_SUMMARY.py \
-    -c ${cons_fn_list}
+        -c ${cons_fn_list}
 
     """
 }

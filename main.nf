@@ -134,6 +134,7 @@ process cov_summary_INDIV {
     tag "Coverage summary per individual"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
     input:
@@ -162,6 +163,7 @@ process cov_summary_ALL {
     tag "Coverage summary for all indivs"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/00.coverage/", mode:'copy'
 
     input:
@@ -198,9 +200,10 @@ process call_variants_CHROMO {
 
     tag "Coverage summary for all indivs"
     label 'process_high'
+    // label 'Endurance'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
-    label 'Endurance'
 
     input:
     tuple val(individual), path(indiv_bam), path(indiv_bam_bai), val(chromo), path(reference)
@@ -230,6 +233,7 @@ process remove_indels {
     tag "Remove indels"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -259,6 +263,7 @@ process mask_hets {
     tag "Generate mask for het sites"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -288,6 +293,7 @@ process mask_cov {
     tag "Generate mask for low or excess coverage sites"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -315,6 +321,8 @@ process mask_merge {
 
     tag "Merge low cov and het mask files"
     label 'process_single'
+    conda 'environment.yml'
+
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
 
     input:
@@ -333,8 +341,8 @@ process mask_merge {
 
     # Merge two mask files and sort by position. Remove duplicate entries
     cat ${cov_bed} ${het_bed} | \
-    sort -Vk1 -Vk2 | \
-    uniq > "${chromo}"_cov_hets.tsv
+        sort -Vk1 -Vk2 | \
+        uniq > "${chromo}"_cov_hets.tsv
 
     # Add a header for each column to make it a proper bed file. NOTE, for some reason bcftools consensus has a problem with BED naming, hence tsv.
     sed -i '1i #CHROM\tPOS' "${chromo}"_cov_hets.tsv
@@ -352,6 +360,7 @@ process call_consensus {
     tag "Call consensus without masking"
     label 'process_high'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -383,6 +392,7 @@ process call_consensus_MASK {
     tag "Call consensus with masking"
     label 'process_high'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -416,6 +426,7 @@ process calc_missing_data_INDIV {
     tag "Calculate missing data per individual and chromosome"
     label 'process_single'
     conda 'environment.yml'
+
     publishDir "${params.outputdir}/02.consensus/${individual}", mode:'copy'
 
     input:
@@ -445,6 +456,8 @@ process calc_missing_data_SUMMARY {
 
     tag "Calculate missing data across all individual"
     label 'process_single'
+    conda 'environment.yml'
+
     publishDir "${params.outputdir}/02.consensus/", mode:'copy'
 
     input:

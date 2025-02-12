@@ -320,7 +320,7 @@ process mask_merge {
  */
 
     tag "Merge low cov and het mask files"
-    label 'process_single'
+    label 'process_medium'
     conda 'environment.yml'
 
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'

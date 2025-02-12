@@ -106,7 +106,7 @@ process cov_estimate {
  */
 
     tag "Estimate coverage"
-    label 'process_single'
+    label 'process_medium'
     conda 'environment.yml'
 
     input:
@@ -231,7 +231,7 @@ process remove_indels {
  */
 
     tag "Remove indels"
-    label 'process_single'
+    label 'process_medium'
     conda 'environment.yml'
 
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
@@ -291,7 +291,7 @@ process mask_cov {
  */
 
     tag "Generate mask for low or excess coverage sites"
-    label 'process_single'
+    label 'process_low'
     conda 'environment.yml'
 
     publishDir "${params.outputdir}/01.variants/${individual}", mode:'copy'
